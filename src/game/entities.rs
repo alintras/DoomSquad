@@ -9,6 +9,7 @@ use crate::game::entity_behaviour::{
     summoner_enemy_behaviour, weak_enemy_behaviour,
 };
 
+use crate::game::keybindings::KeyBindings;
 use crate::game::map::{Map, Point};
 use crate::game::movement::Mover;
 use crate::render::RendererData;
@@ -198,10 +199,11 @@ impl Entity {
         player_mover: &Mover,
         renderer_data: &RendererData,
         audio: &mut Audio,
+        bindings: &KeyBindings,
     ) -> Vec<EntityEvent> {
         //collect all Spawn events for gamestate
         let mut events: Vec<EntityEvent> = Vec::new();
-        if window.is_key_pressed(Key::L, minifb::KeyRepeat::No) {
+        if window.is_key_pressed(KeyBindings::to_key(bindings.enemy_lock), minifb::KeyRepeat::No) {
             self.movement_locked = !self.movement_locked;
         }
 
