@@ -11,6 +11,7 @@ use std::fs;
 use crate::audio::audio_handler::Audio;
 use crate::game::gamestate::Game;
 use crate::render::RendererData;
+use crate::game::keybindings::KeyBindings;
 
 const SCREEN_WIDTH: usize = 800;
 const SCREEN_HEIGHT: usize = 450;
@@ -48,12 +49,14 @@ struct ButtonDef {
 /// we only need to manually track the mouse state for edge detection (clicks).
 pub struct Menu {
     was_mouse_down: bool,
+    waiting_for_key: Option<String>,
 }
 
 impl Menu {
     pub fn new() -> Self {
         Self {
             was_mouse_down: false,
+            waiting_for_key: None,
         }
     }
 
@@ -134,12 +137,13 @@ impl Menu {
             text: "[4] CONTROLS".to_string(),
         };
 
+        let exit_key_str = Self::key_to_string(game.bindings.menu_escape);
         let btn_quit = ButtonDef {
             x: 230,
             y: 350,
             w: 340,
             h: 45,
-            text: "[ESC] QUIT GAME".to_string(),
+            text: format!("[{}] QUIT GAME", exit_key_str),
         };
 
         // Interaction processing
@@ -290,12 +294,14 @@ impl Menu {
             h: 45,
             text: "[4] CONTROLS".to_string(),
         };
+
+        let exit_key_str = Self::key_to_string(game.bindings.menu_escape);
         let btn_menu = ButtonDef {
             x: 230,
             y: 340,
             w: 340,
             h: 45,
-            text: "[ESC] MAIN MENU".to_string(),
+            text: format!("[{}] MAIN MENU", exit_key_str),
         };
 
         if self.draw_flat_button(buffer, &btn_resume, mx, my) && clicked || click1 {
@@ -322,35 +328,139 @@ impl Menu {
 
         AppState::GamePaused
     }
-    // Renders the controls menu screen
+
+// Klartextnamen für Keybinds
+    fn key_to_string(key_val: u32) -> String {
+        let real_key = KeyBindings::to_key(key_val);
+        let raw = format!("{:?}", real_key);
+        raw.replace("Key::", "").replace("Key", "")
+    }
+
+    // Renders the controls menu screen in two columns with clean key names & interactive rebinding
     pub fn update_and_draw_controls(
         &mut self,
         window: &mut Window,
         buffer: &mut [u32],
         game: &mut Game,
-        audio: &mut Audio,
+        _audio: &mut Audio,
     ) -> AppState {
         buffer.fill(COL_BG_PAUSED);
 
         let (mx, my, clicked) = self.get_mouse_state(window);
-        let escape_clicked = window.is_key_pressed(Key::Escape, KeyRepeat::No);
+        let escape_clicked = window.is_key_pressed(KeyBindings::to_key(game.bindings.menu_escape), KeyRepeat::No);
 
+        // Waiting for a new key press if user clicked an option
+        if let Some(ref key_name) = self.waiting_for_key.clone() {
+            Self::draw_text_centered(buffer, SCREEN_WIDTH, SCREEN_HEIGHT, "PRESS A NEW KEY...", 180, 2, COL_TITLE_RED);
+            Self::draw_text_centered(buffer, SCREEN_WIDTH, SCREEN_HEIGHT, &format!("For: {}", key_name), 220, 2, COL_TEXT_WHITE);
+
+            let keys = window.get_keys_pressed(KeyRepeat::No);
+            if let Some(&new_key) = keys.first() {
+                let new_key_code = new_key as u32;
+
+                match key_name.as_str() {
+                    "FORWARD" => game.bindings.forward = new_key_code,
+                    "BACKWARD" => game.bindings.backward = new_key_code,
+                    "LEFT" => game.bindings.left = new_key_code,
+                    "RIGHT" => game.bindings.right = new_key_code,
+                    "SPRINT" => game.bindings.sprint = new_key_code,
+                    "JUMP" => game.bindings.jump = new_key_code,
+                    "CROUCH" => game.bindings.crouch = new_key_code,
+                    "ROCKET JUMP" => game.bindings.rocket_jump = new_key_code,
+                    "INTERACT" => game.bindings.interact = new_key_code,
+                    "AIM UP" => game.bindings.aim_up = new_key_code,
+                    "AIM DOWN" => game.bindings.aim_down = new_key_code,
+                    "TURN LEFT" => game.bindings.turn_left = new_key_code,
+                    "TURN RIGHT" => game.bindings.turn_right = new_key_code,
+                    "TOGGLE AIM" => game.bindings.toggle_aim = new_key_code,
+                    "FIRE BULLET" => game.bindings.fire_bullet = new_key_code,
+                    "FIRE ARROW" => game.bindings.fire_arrow = new_key_code,
+                    "GODMODE" => game.bindings.godmode = new_key_code,
+                    "LOCK ENEMIES" => game.bindings.enemy_lock = new_key_code,
+                    "EXIT" => game.bindings.menu_escape = new_key_code,
+                    _ => {}
+                }
+
+                let _ = game.bindings.save();
+                self.waiting_for_key = None;
+            }
+            return AppState::Controls;
+        }
+
+        // Title
         Self::draw_text_centered(
             buffer,
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            "CONTROLS",
-            60,
-            6,
+            "CONTROLS (CLICK TO REBIND)",
+            15,
+            2,
             COL_TITLE_BLUE,
         );
 
+        // List of Keybindings
+        let bindings = &game.bindings;
+        let controls_data = vec![
+            ("FORWARD", bindings.forward),
+            ("BACKWARD", bindings.backward),
+            ("LEFT", bindings.left),
+            ("RIGHT", bindings.right),
+            ("SPRINT", bindings.sprint),
+            ("JUMP", bindings.jump),
+            ("CROUCH", bindings.crouch),
+            ("ROCKET JUMP", bindings.rocket_jump),
+            ("INTERACT", bindings.interact),
+            ("AIM UP", bindings.aim_up),
+            ("AIM DOWN", bindings.aim_down),
+            ("TURN LEFT", bindings.turn_left),
+            ("TURN RIGHT", bindings.turn_right),
+            ("TOGGLE AIM", bindings.toggle_aim),
+            ("FIRE BULLET", bindings.fire_bullet),
+            ("FIRE ARROW", bindings.fire_arrow),
+            ("GODMODE", bindings.godmode),
+            ("LOCK ENEMIES", bindings.enemy_lock),
+            ("EXIT", bindings.menu_escape),
+        ];
+
+        // Split into 2 columns
+        let mid_point = (controls_data.len() + 1) / 2;
+        let left_column = &controls_data[..mid_point];
+        let right_column = &controls_data[mid_point..];
+
+        // Helper to draw clickable columns
+        let mut draw_clickable_column = |column: &[(&str, u32)], start_x: usize| {
+            let mut y = 55;
+            for (name, val) in column {
+                let key_str = Self::key_to_string(*val);
+                let display_text = format!("{}: {}", name, key_str);
+
+                let btn = ButtonDef {
+                    x: start_x,
+                    y,
+                    w: 340,
+                    h: 22,
+                    text: display_text,
+                };
+
+                if self.draw_flat_button(buffer, &btn, mx, my) && clicked {
+                    self.waiting_for_key = Some(name.to_string());
+                }
+
+                y += 26;
+            }
+        };
+
+        draw_clickable_column(left_column, 40);
+        draw_clickable_column(right_column, 420);
+
+        let escape_key_str = Self::key_to_string(game.bindings.menu_escape);
+
         let btn_back = ButtonDef {
             x: 230,
-            y: 330,
+            y: 410,
             w: 340,
-            h: 50,
-            text: "[ESC] BACK TO MENU".to_string(),
+            h: 30,
+            text: format!("[{}] BACK TO MENU", escape_key_str),
         };
 
         if self.draw_flat_button(buffer, &btn_back, mx, my) && clicked || escape_clicked {
