@@ -30,6 +30,7 @@ pub enum AppState {
     Playing,
     GameOver,
     GamePaused,
+    Controls,
     Quit,
 }
 
@@ -73,6 +74,7 @@ impl Menu {
         let click1 = window.is_key_pressed(Key::Key1, KeyRepeat::No);
         let click2 = window.is_key_pressed(Key::Key2, KeyRepeat::No);
         let click3 = window.is_key_pressed(Key::Key3, KeyRepeat::No);
+        let click4 = window.is_key_pressed(Key::Key4, KeyRepeat::No);
 
         // Render titles
         Self::draw_text_centered(
@@ -123,9 +125,18 @@ impl Menu {
             text: audio_text.to_string(),
         };
 
-        let btn_quit = ButtonDef {
+        
+        let btn_controls = ButtonDef {
             x: 230,
             y: 370,
+            w: 340,
+            h: 50,
+            text: "[4] CONTROLS".to_string(),
+        };
+
+        let btn_quit = ButtonDef {
+            x: 230,
+            y: 440,
             w: 340,
             h: 50,
             text: "[ESC] QUIT GAME".to_string(),
@@ -153,6 +164,10 @@ impl Menu {
         if self.draw_flat_button(buffer, &btn_audio, mx, my) && clicked || click3 {
             audio.set_muted(!audio.is_muted);
             return AppState::StartScreen;
+        }
+
+        if self.draw_flat_button(buffer, &btn_controls, mx, my)  && clicked || click4 {
+            return AppState::Controls;
         }
 
         if self.draw_flat_button(buffer, &btn_quit, mx, my) && clicked {
