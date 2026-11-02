@@ -1,4 +1,4 @@
-use minifb::{Key, Window};
+use minifb::{Window};
 
 use crate::audio::audio_handler::Audio;
 use crate::game::entities::EntityType::*;
