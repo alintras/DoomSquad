@@ -8,5 +8,6 @@ pub mod map;
 pub mod map_grid;
 pub mod movement;
 pub mod player;
+pub mod keybindings;
 
 pub use gamestate::Game;

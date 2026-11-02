@@ -1,4 +1,5 @@
 use std::{fs, path::Path};
+use super::keybindings::KeyBindings;
 
 use crate::{
     audio::audio_handler::Audio,
@@ -36,6 +37,7 @@ pub struct Game {
     pub projectile_that_hit: Vec<usize>,
     pub map_index: usize,
     pub last_map_index: usize,
+    pub bindings: KeyBindings,
 }
 
 impl Game {
@@ -73,6 +75,7 @@ impl Game {
                 projectile_that_hit: Vec::new(),
                 map_index: 0,
                 last_map_index: 0,
+                bindings: KeyBindings::load(),
             };
 
             Some(game)
@@ -95,7 +98,7 @@ impl Game {
 
         let mut entity_spawns = Vec::new();
         //update player
-        let event = self.player.update(window, &self.map, renderer_data, audio);
+        let event = self.player.update(window, &self.map, renderer_data, audio, &self.bindings);
         //add possible spawn events
         entity_spawns.extend(event);
 

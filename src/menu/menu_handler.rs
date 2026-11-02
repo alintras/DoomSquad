@@ -99,16 +99,16 @@ impl Menu {
         // Define button layouts
         let btn_start = ButtonDef {
             x: 230,
-            y: 160,
+            y: 130,
             w: 340,
-            h: 50,
+            h: 45,
             text: "[1] NEW GAME".to_string(),
         };
         let btn_load = ButtonDef {
             x: 230,
-            y: 230,
+            y: 185,
             w: 340,
-            h: 50,
+            h: 45,
             text: "[2] LOAD MAP".to_string(),
         };
 
@@ -119,26 +119,26 @@ impl Menu {
         };
         let btn_audio = ButtonDef {
             x: 230,
-            y: 300,
+            y: 240,
             w: 340,
-            h: 50,
+            h: 45,
             text: audio_text.to_string(),
         };
 
         
         let btn_controls = ButtonDef {
             x: 230,
-            y: 370,
+            y: 295,
             w: 340,
-            h: 50,
+            h: 45,
             text: "[4] CONTROLS".to_string(),
         };
 
         let btn_quit = ButtonDef {
             x: 230,
-            y: 440,
+            y: 350,
             w: 340,
-            h: 50,
+            h: 45,
             text: "[ESC] QUIT GAME".to_string(),
         };
 
@@ -243,13 +243,14 @@ impl Menu {
         let click1 = window.is_key_pressed(Key::Key1, KeyRepeat::No);
         let click2 = window.is_key_pressed(Key::Key2, KeyRepeat::No);
         let click3 = window.is_key_pressed(Key::Key3, KeyRepeat::No);
+        let click4 = window.is_key_pressed(Key::Key4, KeyRepeat::No);
 
         Self::draw_text_centered(
             buffer,
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
             "GAME PAUSED",
-            60,
+            40,
             6,
             COL_TITLE_BLUE,
         );
@@ -260,37 +261,44 @@ impl Menu {
             "[3] SOUND: OFF"
         };
 
+        // Etwas kompakter gestaltet, damit alles perfekt ins Pausenmenü passt
         let btn_resume = ButtonDef {
             x: 230,
-            y: 150,
+            y: 120,
             w: 340,
-            h: 50,
+            h: 45,
             text: "[1] RESUME GAME".to_string(),
         };
         let btn_save = ButtonDef {
             x: 230,
-            y: 210,
+            y: 175,
             w: 340,
-            h: 50,
+            h: 45,
             text: "[2] SAVE & EXIT".to_string(),
         };
         let btn_audio = ButtonDef {
             x: 230,
-            y: 270,
+            y: 230,
             w: 340,
-            h: 50,
+            h: 45,
             text: audio_text.to_string(),
+        };
+        let btn_controls = ButtonDef {
+            x: 230,
+            y: 285,
+            w: 340,
+            h: 45,
+            text: "[4] CONTROLS".to_string(),
         };
         let btn_menu = ButtonDef {
             x: 230,
-            y: 330,
+            y: 340,
             w: 340,
-            h: 50,
+            h: 45,
             text: "[ESC] MAIN MENU".to_string(),
         };
 
         if self.draw_flat_button(buffer, &btn_resume, mx, my) && clicked || click1 {
-            // Simply return to the Playing state without touching the game object to resume seamlessly
             return AppState::Playing;
         }
 
@@ -304,11 +312,52 @@ impl Menu {
             return AppState::GamePaused;
         }
 
+        if self.draw_flat_button(buffer, &btn_controls, mx, my) && clicked || click4 {
+            return AppState::Controls;
+        }
+
         if self.draw_flat_button(buffer, &btn_menu, mx, my) && clicked {
             return AppState::StartScreen;
         }
 
         AppState::GamePaused
+    }
+    // Renders the controls menu screen
+    pub fn update_and_draw_controls(
+        &mut self,
+        window: &mut Window,
+        buffer: &mut [u32],
+        game: &mut Game,
+        audio: &mut Audio,
+    ) -> AppState {
+        buffer.fill(COL_BG_PAUSED);
+
+        let (mx, my, clicked) = self.get_mouse_state(window);
+        let escape_clicked = window.is_key_pressed(Key::Escape, KeyRepeat::No);
+
+        Self::draw_text_centered(
+            buffer,
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            "CONTROLS",
+            60,
+            6,
+            COL_TITLE_BLUE,
+        );
+
+        let btn_back = ButtonDef {
+            x: 230,
+            y: 330,
+            w: 340,
+            h: 50,
+            text: "[ESC] BACK TO MENU".to_string(),
+        };
+
+        if self.draw_flat_button(buffer, &btn_back, mx, my) && clicked || escape_clicked {
+            return AppState::StartScreen;
+        }
+
+        AppState::Controls
     }
 
     /// Fetches mouse coordinates and performs edge detection (debouncing) for left-clicks.

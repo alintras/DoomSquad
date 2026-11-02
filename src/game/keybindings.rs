@@ -26,8 +26,8 @@ pub struct KeyBindings {
 }
 
 impl Default for KeyBindings {
-    fn default() -> Self{
-        Self{
+    fn default() -> Self {
+        Self {
             forward: Key::W as u32,
             backward: Key::S as u32,
             left: Key::A as u32,
@@ -53,8 +53,8 @@ impl Default for KeyBindings {
 
 impl KeyBindings {
     pub fn load() -> Self {
-        if let Ok(data) = fs::read_to_string("keybindings.json"){
-            if let Ok(bindings) = serde_json::from_str(&data){
+        if let Ok(data) = fs::read_to_string("keybindings.json") {
+            if let Ok(bindings) = serde_json::from_str(&data) {
                 return bindings;
             }
         }
@@ -62,12 +62,12 @@ impl KeyBindings {
     }
 
     pub fn save(&self) {
-        if let Ok(data) = serde_json::to_string(self){
+        if let Ok(data) = serde_json::to_string(self) {
             let _ = fs::write("keybindings.json", data);
         }
     }
 
     pub fn to_key(code: u32) -> Key {
-        unsafe {std::mem::transmute(code)}
+        unsafe { std::mem::transmute(code as u8) }
     }
 }

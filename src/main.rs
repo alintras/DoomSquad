@@ -9,6 +9,7 @@ mod render;
 use crate::audio::audio_handler::Audio;
 use crate::menu::menu_handler::{AppState, Menu};
 use crate::render::{RendererData, render_init};
+use crate::game::keybindings::KeyBindings;
 use minifb::{Key, KeyRepeat, Window, WindowOptions};
 use std::f64::consts::PI;
 use std::time::Instant;
@@ -62,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut app_state = AppState::StartScreen;
 
     while window.is_open() {
-        let escape_clicked = window.is_key_pressed(Key::Escape, KeyRepeat::No);
+        let escape_clicked = window.is_key_pressed(KeyBindings::to_key(game.bindings.menu_escape), KeyRepeat::No);
 
         match app_state {
             AppState::StartScreen => {
@@ -110,6 +111,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     app_state = AppState::StartScreen;
                 } else {
                     app_state = menu.update_and_draw_game_paused(
+                        &mut window,
+                        &mut buffer,
+                        &mut game,
+                        &mut audio,
+                    );
+                }
+            }
+
+            AppState::Controls => {
+                window.set_cursor_visibility(true);
+
+                if escape_clicked {
+                    app_state = AppState::StartScreen;
+                } else {
+                    app_state = menu.update_and_draw_controls(
                         &mut window,
                         &mut buffer,
                         &mut game,
